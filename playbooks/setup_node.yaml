@@ -1,0 +1,116 @@
+---
+# Check if  target is up and running
+- name: Pre configure agent
+  - hosts: agents
+    ansible.builtin.any_errors_fatal: true
+    tasks:
+      - name: wait until connection is established
+        ansible.builtin.wait_for:
+          host: ansible_host
+          port: 22
+          timeout: 300
+        ansible.builtin.register: run_check_result
+  
+      - name: Create user 'agent_user' 
+        ansible.builtin.become: yes
+        ansible.builtin.user:
+          name: {{ agent_user }}
+          home: {{ agent_home }}
+
+        # (Optional) Disable user sudo password at /etc/sudoers
+      - name: Disable sudo password for user
+        become: yes
+        ansible.builtin.lineinfile:
+          path: /etc/sudoers
+          state: present
+          regexp: '^{{ agent_user }} ALL='
+          line: '{{ agent_user }} ALL=(ALL) NOPASSWD: ALL'
+          validate: /usr/sbin/visudo -cf %s
+
+      #TODO: automatically get target_type
+
+# install required packages
+- name: Install required packages
+  ansible.builtin.any_errors_fatal: true
+  ansible.builtin.become: yes
+  - hosts: agents
+    tasks:
+      - name: udpate apt-get
+        ansible.builtin.apt:
+          update_cache: yes
+
+      - name: install packages
+        ansible.builtin.apt:
+          name: {{ item }}
+        with_items: "{{ required_packages }}"
+
+      - name: upgrade apt-get
+        ansible.builtin.apt:
+          upgrade: yes
+
+# install jenkins
+- name: Install Jenkins service
+  ansible.builtin.any_errors_fatal: true
+  ansible.builtin.become: yes
+  - hosts: agents
+    tasks:
+      - name: Add the repository key to the system
+        ansible.builtin.shell: |
+          wget -q -O - https://pkg.jenkins.io/debian-stable/jenkins.io.key | sudo apt-key add -
+
+      - name: Add to repo list
+        ansible.builtin.lineinfile:
+          path: /etc/apt/sources.list.d/jenkins.list
+          state: present
+          regexp: 'deb https://pkg.jenkins.io/debian-stable binary/'
+          line: 'deb https://pkg.jenkins.io/debian-stable binary/'
+          
+      - name: Update apt-get
+        ansible.builtin.apt:
+          update_cache: yes
+
+      - name: Install jenkins
+        ansible.builtin.apt:
+          name: jenkins
+
+      - name: Avoid setup wizzard
+        ansible.builtin.lineinfile:
+          path: /etc/default/jenkins
+          state: present
+          regexp: "runSetupWizard"
+          line: 'JAVA_ARGS="$JAVA_ARGS -D jenkins.install.runSetupWizard=false"'
+
+      - name: Create jenkins security file
+        block:
+          - name: Create credential files
+            ansible.builtin.shell: |
+              echo {{ agent_user }} >  {{ agent_user_file }}
+              echo {{ agent_password }} > {{ agent_password_file }}
+  
+          - name: Create security file
+            block: 
+              - name: Create required directories
+                ansible.builin.file:
+                  path: /usr/share/jenkins/ref/init.groovy.d
+                  state: directory
+              
+              - name: Generate security file
+                ansible.builtin.template:
+                  src: ../templates/jenkins_security.groovy.j2
+                  dest: /usr/share/jenkins/ref/init.groovy.d/security.groovy
+                  mode: u=rwx,g=r,o=r
+
+      #TODO: Allow thru firewall if Ubuntu
+
+# install jenkins plugins
+- name: Install Jenkins plugins
+  block:
+    - name: Execute install script
+      ansible.builtin.script:
+        cmd: ../scripts/install-jenkins-plugins.sh --plugins ../templates/jenkins_plugins_list.txt --plugindir {{ jenkins_plugin_dir}}
+    
+
+# install swarm service
+# start jenkins
+# start jenkins_swarm_client
+

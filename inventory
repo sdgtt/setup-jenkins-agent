@@ -1,0 +1,4 @@
+[agents]
+localhost   ansible_connection=local ansible_user=root ansible_password=analog
+
+[agents:vars]

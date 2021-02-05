@@ -1,0 +1,23 @@
+agent_user: username # TODO: prevent crendentials to be seen in public files
+agent_password: pasword # TODO: prevent crendentials to be seen in public files
+agent_home: /home/username
+agent_user_file: /etc/jenkins-user
+agent_password_file: /etc/jenkins-pass
+master_user: master_username # TODO: prevent crendentials to be seen in public files
+master_pass: master_password # TODO: prevent crendentials to be seen in public files
+master_user_file: /etc/jenkins-user-master
+master_pass_file: /etc/jenkins-pass-master
+jenkins_plugin_dir: /var/lib/jenkins/plugins
+required_packages:
+  - screen
+  - expect
+  - tclsh
+  - groovy
+  - eject
+  - python3
+  - python3-venv
+  - libatlas-base-dev
+  - default-jdk
+  - curl
+  - git
+  - htpdate
