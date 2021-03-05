@@ -111,21 +111,21 @@
 
     # TODO: Allow thru firewall if Ubuntu
 
-# install jenkins plugins
-- name: Install Jenkins plugins
-  any_errors_fatal: true
-  gather_facts: false
-  become: yes
-  hosts: agents
-  tasks:
-    - name: Copy jenkins_plugins_list.txt to jenkins_plugin_dir
-      copy:
-          src: ../templates/jenkins_plugins_list.txt
-          dest: "{{ jenkins_plugin_dir }}/jenkins_plugins_list.txt"
+# # install jenkins plugins
+# - name: Install Jenkins plugins
+#   any_errors_fatal: true
+#   gather_facts: false
+#   become: yes
+#   hosts: agents
+#   tasks:
+#     - name: Copy jenkins_plugins_list.txt to jenkins_plugin_dir
+#       copy:
+#           src: ../templates/jenkins_plugins_list.txt
+#           dest: "{{ jenkins_plugin_dir }}/jenkins_plugins_list.txt"
 
-    - name: Execute install script
-      script:
-        cmd: "../scripts/install-jenkins-plugins.sh --plugins {{ jenkins_plugin_dir }}/jenkins_plugins_list.txt --plugindir {{ jenkins_plugin_dir}}"
+#     - name: Execute install script
+#       script:
+#         cmd: "../scripts/install-jenkins-plugins.sh --plugins {{ jenkins_plugin_dir }}/jenkins_plugins_list.txt --plugindir {{ jenkins_plugin_dir}}"
     
 
 # install swarm service
@@ -135,13 +135,35 @@
   become: yes
   hosts: agents
   tasks:
-    - name: Create credentials
-    
     - name: Copy systemd file
+      template:
+        src: ../templates/jenkins_swarm_client.service.j2
+        dest: /etc/systemd/system/jenkins_swarm_client.service
 
     - name: Copy init file
+      template:
+        src: ../templates/jenkins_swarm_client.init.j2
+        dest: /etc/init.d/jenkins_swarm_client
+        mode: u=rwx,g=r,o=r
 
     - name: Enable jenkins_swarm_client
-# start jenkins
-# start jenkins_swarm_client
+      systemd:
+        name: jenkins_swarm_client
+        enabled: yes
+        masked: no
 
+- name: Start services
+  any_errors_fatal: true
+  gather_facts: false
+  become: yes
+  hosts: agents
+  tasks:
+    - name: Restart Jenkins
+      systemd:
+        name: jenkins
+        state: restarted
+
+    - name: Start Jenkins Swarm Client
+      systemd:
+        name: jenkins_swarm_client
+        state: started

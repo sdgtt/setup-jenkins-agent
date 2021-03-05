@@ -42,13 +42,17 @@ startclient() {
 
    sudo /usr/bin/java \
 	-jar ${SWARM_CLIENT_JAR} \
-	-executors 1 \
-	-name RPI \
-	-deleteExistingClients \
+	-executors ${AGENT_EXECUTORS} \
+	-name ${AGENT_NAME} \
 	-mode exclusive \
 	-disableSslVerification \
+  -username ${MASTER_USR} \
+  -password ${MASTER_PWD} \
 	-master ${MASTER_IP} \
 	-fsroot '/var/lib/jenkins' \
+  -labels ${AGENT_LABEL} \
+  -disableClientsUniqueId \
+	-deleteExistingClients \
    &> "$LOG_FILE" &
 	PID=$!
 	RETCODE=$?
@@ -77,9 +81,10 @@ stopclient() {
 }
 
 source /etc/default/jenkins
-MASTER_IP=http://10.48.65.134:8080/
-MASTER_USER_FILE=/etc/jenkins-user-master
-MASTER_PASS_FILE=/etc/jenkins-pass-master
+MASTER_IP="{{ master_ip }}"
+MASTER_USR="{{ master_user }}"
+MASTER_PWD="{{ master_pass }}"
+AGENT_LABEL="{{ agent_label }}"
 
 SWARM_CLIENT_JAR=$JENKINS_HOME/plugins/swarm/swarm-client.jar
 PID_FILE=/var/run/jenkins_swarm_client.pid

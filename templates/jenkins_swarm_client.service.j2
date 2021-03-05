@@ -1,0 +1,15 @@
+[Unit]
+Description=Swarm client to create Jenkins client
+After=network.target
+After=jenkins.service
+
+[Service]
+ExecStart=/etc/init.d/jenkins_swarm_client start
+ExecStop=/etc/init.d/jenkins_swarm_client stop
+Type=forking
+PIDFile=/var/run/jenkins_swarm_client.pid
+User=root
+Group=root
+
+[Install]
+WantedBy=multi-user.target
