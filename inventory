@@ -1,4 +1,4 @@
 [agents]
-localhost   ansible_connection=local ansible_user=root ansible_password=analog
+192.168.10.113   ansible_connection=ssh ansible_user=analog ansible_password=analog ansible_become_password=analog
 
 [agents:vars]

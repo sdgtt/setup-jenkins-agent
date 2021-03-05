@@ -42,8 +42,8 @@ fetch_plugin()
     done
   fi
 
-  URL=`cat $PLUGIN_TEMPDIR/update-center.json | python -c "import sys, json; print json.load(sys.stdin)[\"plugins\"][\"$FPLUGIN\"][\"url\"]"`
-  VERSION=`cat $PLUGIN_TEMPDIR/update-center.json | python -c "import sys, json; print json.load(sys.stdin)[\"plugins\"][\"$FPLUGIN\"][\"version\"]"`
+  URL=`cat $PLUGIN_TEMPDIR/update-center.json | python3 -c "import sys, json; print(json.load(sys.stdin)[\"plugins\"][\"$FPLUGIN\"][\"url\"])"`
+  VERSION=`cat $PLUGIN_TEMPDIR/update-center.json | python3 -c "import sys, json; print(json.load(sys.stdin)[\"plugins\"][\"$FPLUGIN\"][\"version\"])"`
   SFILENAME=`basename $URL | sed -e "s|.hpi|.jpi|g"`
   FFILENAME=`basename $URL | sed -e "s|.hpi|-$VERSION.jpi|g"`
 
@@ -56,18 +56,18 @@ fetch_plugin()
 
   cp $PLUGIN_TEMPDIR/$FFILENAME $PLUGINS_DIR/$SFILENAME
 
-  DEPENDENCIES=`cat $PLUGIN_TEMPDIR/update-center.json | python -c "import sys, json; print json.load(sys.stdin)[\"plugins\"][\"$FPLUGIN\"][\"dependencies\"]"`
+  DEPENDENCIES=`cat $PLUGIN_TEMPDIR/update-center.json | python3 -c "import sys, json; print(json.load(sys.stdin)[\"plugins\"][\"$FPLUGIN\"][\"dependencies\"])"`
 
   if [ "$DEPENDENCIES" != "[]" ]; then
     for DEP_LOOP in 0 1 2 3 4 5 6 7 8 9 10; do
-      DEPENDENCY=`cat $PLUGIN_TEMPDIR/update-center.json | python -c "import sys, json; print json.load(sys.stdin)[\"plugins\"][\"$FPLUGIN\"][\"dependencies\"][$DEP_LOOP][\"name\"]" 2>/dev/null || true`
+      DEPENDENCY=`cat $PLUGIN_TEMPDIR/update-center.json | python3 -c "import sys, json; print(json.load(sys.stdin)[\"plugins\"][\"$FPLUGIN\"][\"dependencies\"][$DEP_LOOP][\"name\"])" 2>/dev/null || true`
 
       # No more dependency, exit loop
       if [ "$DEPENDENCY" = "" ]; then
         break;
       fi
       
-      OPTIONALP=`cat $PLUGIN_TEMPDIR/update-center.json | python -c "import sys, json; print json.load(sys.stdin)[\"plugins\"][\"$FPLUGIN\"][\"dependencies\"][$DEP_LOOP][\"optional\"]" 2>/dev/null|| true`
+      OPTIONALP=`cat $PLUGIN_TEMPDIR/update-center.json | python3 -c "import sys, json; print(json.load(sys.stdin)[\"plugins\"][\"$FPLUGIN\"][\"dependencies\"][$DEP_LOOP][\"optional\"])" 2>/dev/null|| true`
       # Don't fetch optional dependencies
       if [ "$OPTIONALP" = "True" ]; then
         echo "$DEPENDENCY plugin is optional, it won't be included"

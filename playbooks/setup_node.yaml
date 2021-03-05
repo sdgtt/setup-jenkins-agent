@@ -1,113 +1,131 @@
 ---
-# Check if  target is up and running
-- name: Pre configure agent
-  - hosts: agents
-    ansible.builtin.any_errors_fatal: true
-    tasks:
-      - name: wait until connection is established
-        ansible.builtin.wait_for:
-          host: ansible_host
-          port: 22
-          timeout: 300
-        ansible.builtin.register: run_check_result
-  
-      - name: Create user 'agent_user' 
-        ansible.builtin.become: yes
-        ansible.builtin.user:
-          name: {{ agent_user }}
-          home: {{ agent_home }}
+# # Check if  target is up and running
+# - name: Pre configure agent
+#   hosts: agents
+#   any_errors_fatal: true
+#   tasks:
+#     - name: wait until connection is established
+#       wait_for:
+#         host: "{{ ansible_host }}"
+#         port: 22
+#         timeout: 10
+#       register: run_check_result
 
-        # (Optional) Disable user sudo password at /etc/sudoers
-      - name: Disable sudo password for user
-        become: yes
-        ansible.builtin.lineinfile:
-          path: /etc/sudoers
-          state: present
-          regexp: '^{{ agent_user }} ALL='
-          line: '{{ agent_user }} ALL=(ALL) NOPASSWD: ALL'
-          validate: /usr/sbin/visudo -cf %s
+#     - name: Create user 'agent_user' 
+#       become: yes
+#       user:
+#         name: "{{ agent_user }}"
+#         home: "{{ agent_home }}"
 
-      #TODO: automatically get target_type
+#       # (Optional) Disable user sudo password at /etc/sudoers
+#     - name: Disable sudo password for user
+#       become: yes
+#       lineinfile:
+#         path: /etc/sudoers
+#         state: present
+#         regexp: '^{{ agent_user }} ALL='
+#         line: '{{ agent_user }} ALL=(ALL) NOPASSWD: ALL'
+#         validate: /usr/sbin/visudo -cf %s
 
-# install required packages
-- name: Install required packages
-  ansible.builtin.any_errors_fatal: true
-  ansible.builtin.become: yes
-  - hosts: agents
-    tasks:
-      - name: udpate apt-get
-        ansible.builtin.apt:
-          update_cache: yes
+#     #TODO: automatically get target_type
 
-      - name: install packages
-        ansible.builtin.apt:
-          name: {{ item }}
-        with_items: "{{ required_packages }}"
+# # install required packages
+# - name: Install required packages
+#   hosts: agents
+#   any_errors_fatal: true
+#   become: yes
+#   tasks:
+#     - name: udpate apt-get
+#       apt:
+#         update_cache: yes
 
-      - name: upgrade apt-get
-        ansible.builtin.apt:
-          upgrade: yes
+#     - name: install packages
+#       apt:
+#         name: "{{ item }}"
+#         state: present
+#       with_items: "{{ required_packages }}"
+
+#     - name: upgrade apt-get
+#       apt:
+#         upgrade: yes
+
+#     - name: restart htpdate
+#       systemd:
+#         name: htpdate
+#         state: restarted
 
 # install jenkins
-- name: Install Jenkins service
-  ansible.builtin.any_errors_fatal: true
-  ansible.builtin.become: yes
-  - hosts: agents
-    tasks:
-      - name: Add the repository key to the system
-        ansible.builtin.shell: |
-          wget -q -O - https://pkg.jenkins.io/debian-stable/jenkins.io.key | sudo apt-key add -
+# - name: Install Jenkins service
+#   any_errors_fatal: true
+#   become: yes
+#   hosts: agents
+#   tasks:
+#     - name: Add the repository key to the system
+#       shell: |
+#         wget -q -O - https://pkg.jenkins.io/debian-stable/jenkins.io.key | sudo apt-key add -
 
-      - name: Add to repo list
-        ansible.builtin.lineinfile:
-          path: /etc/apt/sources.list.d/jenkins.list
-          state: present
-          regexp: 'deb https://pkg.jenkins.io/debian-stable binary/'
-          line: 'deb https://pkg.jenkins.io/debian-stable binary/'
-          
-      - name: Update apt-get
-        ansible.builtin.apt:
-          update_cache: yes
+#     - name: Add to repo list
+#       lineinfile:
+#         path: /etc/apt/sources.list.d/jenkins.list
+#         state: present
+#         create: yes
+#         regexp: 'deb https://pkg.jenkins.io/debian-stable binary/'
+#         line: 'deb https://pkg.jenkins.io/debian-stable binary/'
+        
+#     - name: Update apt-get
+#       apt:
+#         update_cache: yes
 
-      - name: Install jenkins
-        ansible.builtin.apt:
-          name: jenkins
+#     - name: Install jenkins
+#       apt:
+#         state: present
+#         name: jenkins
 
-      - name: Avoid setup wizzard
-        ansible.builtin.lineinfile:
-          path: /etc/default/jenkins
-          state: present
-          regexp: "runSetupWizard"
-          line: 'JAVA_ARGS="$JAVA_ARGS -D jenkins.install.runSetupWizard=false"'
+#     - name: Avoid setup wizzard
+#       lineinfile:
+#         path: /etc/default/jenkins
+#         state: present
+#         regexp: "runSetupWizard"
+#         insertafter: EOF
+#         line: 'JAVA_ARGS="$JAVA_ARGS -Djenkins.install.runSetupWizard=false"'
 
-      - name: Create jenkins security file
-        block:
-          - name: Create credential files
-            ansible.builtin.shell: |
-              echo {{ agent_user }} >  {{ agent_user_file }}
-              echo {{ agent_password }} > {{ agent_password_file }}
-  
-          - name: Create security file
-            block: 
-              - name: Create required directories
-                ansible.builin.file:
-                  path: /usr/share/jenkins/ref/init.groovy.d
-                  state: directory
-              
-              - name: Generate security file
-                ansible.builtin.template:
-                  src: ../templates/jenkins_security.groovy.j2
-                  dest: /usr/share/jenkins/ref/init.groovy.d/security.groovy
-                  mode: u=rwx,g=r,o=r
+#     - name: Create jenkins security file
+#       block:
+#         - name: Create credential files
+#           shell: |
+#             echo {{ agent_user }} >  {{ agent_user_file }}
+#             echo {{ agent_password }} > {{ agent_password_file }}
 
-      #TODO: Allow thru firewall if Ubuntu
+#         - name: Create security file
+#           block: 
+#             - name: Create required directories
+#               file:
+#                 path: /usr/share/jenkins/ref/init.groovy.d
+#                 state: directory
+            
+#             - name: Generate security file
+#               template:
+#                 src: ../templates/jenkins_security.groovy.j2
+#                 dest: /usr/share/jenkins/ref/init.groovy.d/security.groovy
+#                 mode: u=rwx,g=r,o=r
+
+    # TODO: Allow thru firewall if Ubuntu
 
 # install jenkins plugins
 - name: Install Jenkins plugins
-  block:
+  any_errors_fatal: true
+  gather_facts: false
+  become: yes
+  hosts: agents
+  tasks:
+    - name: Copy jenkins_plugins_list.txt to jenkins_plugin_dir
+      copy:
+          src: ../templates/jenkins_plugins_list.txt
+          dest: "{{ jenkins_plugin_dir }}/jenkins_plugins_list.txt"
+
     - name: Execute install script
-      ansible.builtin.script:
-        cmd: ../scripts/install-jenkins-plugins.sh --plugins ../templates/jenkins_plugins_list.txt --plugindir {{ jenkins_plugin_dir}}
+      script:
+        cmd: "../scripts/install-jenkins-plugins.sh --plugins {{ jenkins_plugin_dir }}/jenkins_plugins_list.txt --plugindir {{ jenkins_plugin_dir}}"
     
 
 # install swarm service
