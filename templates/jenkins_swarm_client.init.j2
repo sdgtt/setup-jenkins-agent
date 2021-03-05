@@ -1,0 +1,102 @@
+#!/bin/bash
+# /etc/init.d/jenkins
+# debian-compatible jenkins startup script.
+# Alexandru Ardelean <alexandru.ardelean@analog.com>
+#
+### BEGIN INIT INFO
+# Provides:          jenkins
+# Required-Start:    $remote_fs $syslog $network
+# Required-Stop:     $remote_fs $syslog $network
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start Jenkins at boot time
+# Description:       Controls Jenkins Automation Server
+### END INIT INFO
+
+echo_red()   { printf "\033[1;31m$*\033[m\n"; }
+echo_green() { printf "\033[1;32m$*\033[m\n"; }
+echo_blue()  { printf "\033[1;34m$*\033[m\n"; }
+
+if [ `id -u` != "0" ]
+then
+  echo_red "This script should be run as root" 1>&2
+  exit 1
+fi
+
+# SWARM_CLIENT_JAR file is available only if SWARM plugin was installed properly 
+# in $JENKINS_HOME/plugins/swarm/swarm-client.jar
+# deleteExisting Clients - will first delete agent if it has the same name then re-add it
+# mode exclusive - set "Only build jobs with label expression match this node" tag on agent
+# disableSslVerification - should skip checking credentials
+# master http://<master_ip>:8080/ - is the master to which to connect. Since there are 
+# multiple jenkins server in the same network, it's better to set it explicitly.
+# Labels - tags added to agent. By default is added 'swarm' and if there is a board connected 
+# its name should be added also.
+startclient() {
+   if [ -f "$PID_FILE" ]; then
+      echo "Process already started. Stop it and start it again"
+      exit 1
+   fi
+
+   # Call the script that returns board name
+
+   sudo /usr/bin/java \
+	-jar ${SWARM_CLIENT_JAR} \
+	-executors 1 \
+	-name RPI \
+	-deleteExistingClients \
+	-mode exclusive \
+	-disableSslVerification \
+	-master ${MASTER_IP} \
+	-fsroot '/var/lib/jenkins' \
+   &> "$LOG_FILE" &
+	PID=$!
+	RETCODE=$?
+   echo $PID > "$PID_FILE"
+   echo "Log file is $LOG_FILE, PID_FILE is $PID_FILE"
+   exit $RETCODE
+}
+
+stopclient() {
+  if [ -f "$PID_FILE" ]; then
+    local cnt=10
+    local PID=`head -n1 $PID_FILE`
+    kill $PID &> /dev/null
+    rm -f "$PID_FILE"
+
+    while `kill -0 $PID` &> /dev/null; do
+      echo "Waiting for swarm client to terminate..."
+      sleep 1
+      let cnt='cnt - 1'
+      if [ "$cnt" -le 0 ]; then
+         kill -9 $PID
+         break
+      fi
+    done
+  fi
+}
+
+source /etc/default/jenkins
+MASTER_IP=http://10.48.65.134:8080/
+MASTER_USER_FILE=/etc/jenkins-user-master
+MASTER_PASS_FILE=/etc/jenkins-pass-master
+
+SWARM_CLIENT_JAR=$JENKINS_HOME/plugins/swarm/swarm-client.jar
+PID_FILE=/var/run/jenkins_swarm_client.pid
+LOG_FILE=/var/log/jenkins/jenkins_swarm_client.log
+
+case "$1" in
+  start)
+    startclient
+    ;;
+  stop)
+    stopclient
+    ;;
+  restart)
+    stopclient
+    startclient
+    ;;
+  *)
+    echo "Usage: systemctl {start|stop|restart} swarm_client.service" || true
+    exit 1
+esac

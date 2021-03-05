@@ -129,6 +129,19 @@
     
 
 # install swarm service
+- name: Install swarm service
+  any_errors_fatal: true
+  gather_facts: false
+  become: yes
+  hosts: agents
+  tasks:
+    - name: Create credentials
+    
+    - name: Copy systemd file
+
+    - name: Copy init file
+
+    - name: Enable jenkins_swarm_client
 # start jenkins
 # start jenkins_swarm_client
 

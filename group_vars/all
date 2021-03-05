@@ -3,6 +3,7 @@ agent_password: analog # TODO: prevent crendentials to be seen in public files
 agent_home: /home/analog
 agent_user_file: /etc/jenkins-user
 agent_password_file: /etc/jenkins-pass
+master_ip: 10.
 master_user: MasterAdmin # TODO: prevent crendentials to be seen in public files
 master_pass: B04rdf4rm # TODO: prevent crendentials to be seen in public files
 master_user_file: /etc/jenkins-user-master
