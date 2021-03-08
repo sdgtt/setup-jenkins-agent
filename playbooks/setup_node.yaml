@@ -27,6 +27,19 @@
         line: '{{ agent_user }} ALL=(ALL) NOPASSWD: ALL'
         validate: /usr/sbin/visudo -cf %s
 
+    - name: Add user to sshd_config
+      become: yes
+        path: /etc/ssh/sshd_config
+        state: present
+        regexp: '^AllowUsers {{ agent_user }}'
+        line: 'AllowUsers {{ agent_user }}'
+
+    - name: Reload ssh
+      become: yes
+      service:
+        name: ssh
+        state: reloaded
+
     #TODO: automatically get target_type
 
 # install required packages
@@ -49,6 +62,8 @@
         - eject
         - python3
         - python3-venv
+        - python3-setuptools
+        - python3-pip
         - libatlas-base-dev
         - default-jdk
         - curl
