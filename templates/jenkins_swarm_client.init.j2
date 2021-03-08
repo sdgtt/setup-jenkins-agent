@@ -41,21 +41,21 @@ startclient() {
    # Call the script that returns board name
 
    sudo /usr/bin/java \
-	-jar ${SWARM_CLIENT_JAR} \
-	-executors ${AGENT_EXECUTORS} \
-	-name ${AGENT_NAME} \
-	-mode exclusive \
-	-disableSslVerification \
-  -username ${MASTER_USR} \
-  -password ${MASTER_PWD} \
-	-master ${MASTER_IP} \
-	-fsroot '/var/lib/jenkins' \
-  -labels ${AGENT_LABEL} \
-  -disableClientsUniqueId \
-	-deleteExistingClients \
-   &> "$LOG_FILE" &
-	PID=$!
-	RETCODE=$?
+   -jar ${SWARM_CLIENT_JAR} \
+   -executors ${AGENT_EXECUTORS} \
+   -name ${AGENT_NAME} \
+   -mode exclusive \
+   -disableSslVerification \
+   -username ${MASTER_USR} \
+   -password ${MASTER_PWD} \
+   -master ${MASTER_IP} \
+   -fsroot '/var/lib/jenkins' \
+   -labels=${AGENT_LABEL} \
+   -disableClientsUniqueId \
+   -deleteExistingClients \
+   &> "$LOG_FILE" \
+   & PID=$!
+   RETCODE=$?
    echo $PID > "$PID_FILE"
    echo "Log file is $LOG_FILE, PID_FILE is $PID_FILE"
    exit $RETCODE
@@ -84,7 +84,9 @@ source /etc/default/jenkins
 MASTER_IP="{{ master_ip }}"
 MASTER_USR="{{ master_user }}"
 MASTER_PWD="{{ master_pass }}"
+AGENT_NAME="{{ agent_name }}"
 AGENT_LABEL="{{ agent_label }}"
+AGENT_EXECUTORS="{{ agent_executors }}"
 
 SWARM_CLIENT_JAR=$JENKINS_HOME/plugins/swarm/swarm-client.jar
 PID_FILE=/var/run/jenkins_swarm_client.pid

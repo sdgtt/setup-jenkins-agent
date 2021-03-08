@@ -1,131 +1,141 @@
 ---
-# # Check if  target is up and running
-# - name: Pre configure agent
-#   hosts: agents
-#   any_errors_fatal: true
-#   tasks:
-#     - name: wait until connection is established
-#       wait_for:
-#         host: "{{ ansible_host }}"
-#         port: 22
-#         timeout: 10
-#       register: run_check_result
+# Check if  target is up and running
+- name: Pre configure agent
+  hosts: agents
+  any_errors_fatal: true
+  tasks:
+    - name: wait until connection is established
+      wait_for:
+        host: "{{ ansible_host }}"
+        port: 22
+        timeout: 10
+      register: run_check_result
 
-#     - name: Create user 'agent_user' 
-#       become: yes
-#       user:
-#         name: "{{ agent_user }}"
-#         home: "{{ agent_home }}"
+    - name: Create user 'agent_user' 
+      become: yes
+      user:
+        name: "{{ agent_user }}"
+        home: "{{ agent_home }}"
 
-#       # (Optional) Disable user sudo password at /etc/sudoers
-#     - name: Disable sudo password for user
-#       become: yes
-#       lineinfile:
-#         path: /etc/sudoers
-#         state: present
-#         regexp: '^{{ agent_user }} ALL='
-#         line: '{{ agent_user }} ALL=(ALL) NOPASSWD: ALL'
-#         validate: /usr/sbin/visudo -cf %s
+      # (Optional) Disable user sudo password at /etc/sudoers
+    - name: Disable sudo password for user
+      become: yes
+      lineinfile:
+        path: /etc/sudoers
+        state: present
+        regexp: '^{{ agent_user }} ALL='
+        line: '{{ agent_user }} ALL=(ALL) NOPASSWD: ALL'
+        validate: /usr/sbin/visudo -cf %s
 
-#     #TODO: automatically get target_type
+    #TODO: automatically get target_type
 
-# # install required packages
-# - name: Install required packages
-#   hosts: agents
-#   any_errors_fatal: true
-#   become: yes
-#   tasks:
-#     - name: udpate apt-get
-#       apt:
-#         update_cache: yes
+# install required packages
+- name: Install required packages
+  hosts: agents
+  any_errors_fatal: true
+  become: yes
+  tasks:
+    - name: udpate apt-get
+      apt:
+        update_cache: yes
 
-#     - name: install packages
-#       apt:
-#         name: "{{ item }}"
-#         state: present
-#       with_items: "{{ required_packages }}"
+    - name: install packages
+      apt:
+        pkg:
+        - screen
+        - expect
+        - tclsh
+        - groovy
+        - eject
+        - python3
+        - python3-venv
+        - libatlas-base-dev
+        - default-jdk
+        - curl
+        - git
+        - htpdate
 
-#     - name: upgrade apt-get
-#       apt:
-#         upgrade: yes
+    - name: upgrade apt-get
+      apt:
+        upgrade: yes
 
-#     - name: restart htpdate
-#       systemd:
-#         name: htpdate
-#         state: restarted
+    - name: restart htpdate
+      systemd:
+        name: htpdate
+        state: restarted
 
 # install jenkins
-# - name: Install Jenkins service
-#   any_errors_fatal: true
-#   become: yes
-#   hosts: agents
-#   tasks:
-#     - name: Add the repository key to the system
-#       shell: |
-#         wget -q -O - https://pkg.jenkins.io/debian-stable/jenkins.io.key | sudo apt-key add -
+- name: Install Jenkins service
+  any_errors_fatal: true
+  become: yes
+  hosts: agents
+  tasks:
+    - name: Add the repository key to the system
+      shell: |
+        wget -q -O - https://pkg.jenkins.io/debian-stable/jenkins.io.key | sudo apt-key add -
 
-#     - name: Add to repo list
-#       lineinfile:
-#         path: /etc/apt/sources.list.d/jenkins.list
-#         state: present
-#         create: yes
-#         regexp: 'deb https://pkg.jenkins.io/debian-stable binary/'
-#         line: 'deb https://pkg.jenkins.io/debian-stable binary/'
+    - name: Add to repo list
+      lineinfile:
+        path: /etc/apt/sources.list.d/jenkins.list
+        state: present
+        create: yes
+        regexp: 'deb https://pkg.jenkins.io/debian-stable binary/'
+        line: 'deb https://pkg.jenkins.io/debian-stable binary/'
         
-#     - name: Update apt-get
-#       apt:
-#         update_cache: yes
+    - name: Update apt-get
+      apt:
+        update_cache: yes
 
-#     - name: Install jenkins
-#       apt:
-#         state: present
-#         name: jenkins
+    - name: Install jenkins
+      apt:
+        state: present
+        name: jenkins
 
-#     - name: Avoid setup wizzard
-#       lineinfile:
-#         path: /etc/default/jenkins
-#         state: present
-#         regexp: "runSetupWizard"
-#         insertafter: EOF
-#         line: 'JAVA_ARGS="$JAVA_ARGS -Djenkins.install.runSetupWizard=false"'
+    - name: Avoid setup wizzard
+      lineinfile:
+        path: /etc/default/jenkins
+        state: present
+        regexp: "runSetupWizard"
+        insertafter: EOF
+        line: 'JAVA_ARGS="$JAVA_ARGS -Djenkins.install.runSetupWizard=false"'
 
-#     - name: Create jenkins security file
-#       block:
-#         - name: Create credential files
-#           shell: |
-#             echo {{ agent_user }} >  {{ agent_user_file }}
-#             echo {{ agent_password }} > {{ agent_password_file }}
+    - name: Create jenkins security file
+      block:
+        - name: Create credential files
+          shell: |
+            echo {{ agent_user }} >  {{ agent_user_file }}
+            echo {{ agent_password }} > {{ agent_password_file }}
 
-#         - name: Create security file
-#           block: 
-#             - name: Create required directories
-#               file:
-#                 path: /usr/share/jenkins/ref/init.groovy.d
-#                 state: directory
+        - name: Create security file
+          block: 
+            - name: Create required directories
+              file:
+                path: /usr/share/jenkins/ref/init.groovy.d
+                state: directory
             
-#             - name: Generate security file
-#               template:
-#                 src: ../templates/jenkins_security.groovy.j2
-#                 dest: /usr/share/jenkins/ref/init.groovy.d/security.groovy
-#                 mode: u=rwx,g=r,o=r
+            - name: Generate security file
+              template:
+                src: ../templates/jenkins_security.groovy.j2
+                dest: /usr/share/jenkins/ref/init.groovy.d/security.groovy
+                mode: u=rwx,g=r,o=r
 
     # TODO: Allow thru firewall if Ubuntu
 
-# # install jenkins plugins
-# - name: Install Jenkins plugins
-#   any_errors_fatal: true
-#   gather_facts: false
-#   become: yes
-#   hosts: agents
-#   tasks:
-#     - name: Copy jenkins_plugins_list.txt to jenkins_plugin_dir
-#       copy:
-#           src: ../templates/jenkins_plugins_list.txt
-#           dest: "{{ jenkins_plugin_dir }}/jenkins_plugins_list.txt"
+# install jenkins plugins
+- name: Install Jenkins plugins
+  any_errors_fatal: true
+  gather_facts: false
+  become: yes
+  hosts: agents
+  tasks:
+    - name: Copy jenkins_plugins_list.txt to jenkins_plugin_dir
+      copy:
+          src: ../templates/jenkins_plugins_list.txt
+          dest: "{{ jenkins_plugin_dir }}/jenkins_plugins_list.txt"
 
-#     - name: Execute install script
-#       script:
-#         cmd: "../scripts/install-jenkins-plugins.sh --plugins {{ jenkins_plugin_dir }}/jenkins_plugins_list.txt --plugindir {{ jenkins_plugin_dir}}"
+    - name: Execute install script
+      script:
+        cmd: "../scripts/install-jenkins-plugins.sh --plugins {{ jenkins_plugin_dir }}/jenkins_plugins_list.txt --plugindir {{ jenkins_plugin_dir}}"
     
 
 # install swarm service
@@ -140,11 +150,11 @@
         src: ../templates/jenkins_swarm_client.service.j2
         dest: /etc/systemd/system/jenkins_swarm_client.service
 
-    - name: Copy init file
+    - name: Copy init script
       template:
         src: ../templates/jenkins_swarm_client.init.j2
         dest: /etc/init.d/jenkins_swarm_client
-        mode: u=rwx,g=r,o=r
+        mode: u=rwx,g=rx,o=rx
 
     - name: Enable jenkins_swarm_client
       systemd:
@@ -166,4 +176,4 @@
     - name: Start Jenkins Swarm Client
       systemd:
         name: jenkins_swarm_client
-        state: started
+        state: restarted
