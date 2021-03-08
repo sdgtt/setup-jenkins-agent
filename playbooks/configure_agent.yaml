@@ -1,0 +1,62 @@
+---
+# Check if  target is up and running
+- name: Initial Checks
+  hosts: agents
+  any_errors_fatal: true
+  tasks:
+    - name: wait until connection is established
+      wait_for:
+        host: "{{ ansible_host }}"
+        port: 22
+        timeout: 10
+      register: run_check_result
+
+    # - name: Confirm if services is installed and running
+    #   block: 
+    #     - name: Gather services facts
+    #       service_facts:
+    #       register: services_state
+
+    #     - name: Notify failure
+    #       fail:
+    #         msg: Jenkins swarm client was not started succesfully.
+    #       when: services_state["ansible_facts"]["services"]["jenkins_swarm_client.service"]["state"] != "running"
+
+    #     - name: Check jenkins_swarm_client status
+    #       debug:
+    #         var: services_state["ansible_facts"]["services"]["jenkins_swarm_client.service"]
+
+    - name: Confirm if required packages are installed
+      block:
+        - name: Gather packages facts
+          package_facts:
+            manager: apt
+
+        - name: Notify failure
+          fail:
+            msg: python3 is not installed
+          when: "'python3' not in ansible_facts.packages"
+
+        - name: Notify failure
+          fail:
+            msg: git is not installed
+          when: "'git' not in ansible_facts.packages"
+
+        # - name: Debug
+        #   debug:
+        #     var: ansible_facts.packages["python3"]
+
+- name: Install needed utilities
+  any_errors_fatal: true
+  become: yes
+  hosts: agents
+  tasks:
+    - name: Install Nebula
+      shell: |
+        cd "{{ agent_home }}"
+        git clone "{{ nebula_repo }}"
+        cd nebula
+        python3 -m pip install -r requirements.txt
+        python3 setup.py install
+
+        

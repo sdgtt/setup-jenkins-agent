@@ -12,3 +12,4 @@ master_pass: B04rdf4rm # TODO: prevent crendentials to be seen in public files
 master_user_file: /etc/jenkins-user-master
 master_pass_file: /etc/jenkins-pass-master
 jenkins_plugin_dir: /var/lib/jenkins/plugins
+nebula_repo: https://github.com/tfcollins/nebula.git
