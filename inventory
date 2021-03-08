@@ -1,4 +1,4 @@
 [agents]
-192.168.10.113   ansible_connection=ssh ansible_user=analog ansible_password=analog ansible_become_password=analog
+192.168.10.113   ansible_connection=ssh ansible_user=rpi_ubuntu_2 ansible_password=analog ansible_become_password=analog
 
 [agents:vars]

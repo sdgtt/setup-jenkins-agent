@@ -176,4 +176,18 @@
     - name: Start Jenkins Swarm Client
       systemd:
         name: jenkins_swarm_client
-        state: restarted
+        state: started
+
+    - name: Confirm if services is running
+      service_facts:
+      register: services_state
+
+    - name: Notify failure
+      fail:
+        msg: Jenkins swarm client was not started succesfully.
+      when: services_state["ansible_facts"]["services"]["jenkins_swarm_client.service"]["state"] != "running"
+
+    - name: Check jenkins_swarm_client status
+      debug:
+        var: services_state["ansible_facts"]["services"]["jenkins_swarm_client.service"]
+
