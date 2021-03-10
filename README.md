@@ -39,5 +39,15 @@ Currently supported fields are:
 + jenkins_plugin_dir
 
 ### Execute script
-$ ansible-playbook -i inventory \[-vvv\]
+
+`$ ansible-playbook -i inventory playbooks/setup_node.yaml \[-vvv\]`
+
+After succesful jenkins and jenkins_swarm_client install, reboot target system.
+
+Execute then the following playbook to install additional utilities:
+
+`$ ansible-playbook -i inventory playbooks/configure_agent.yaml \[-vvv\]`
+
+
+
 

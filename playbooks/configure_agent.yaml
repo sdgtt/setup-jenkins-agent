@@ -54,9 +54,63 @@
     - name: Install Nebula
       shell: |
         cd "{{ agent_home }}"
+        if [ -d "nebula"]; then rm -Rf nebula; fi
         git clone "{{ nebula_repo }}"
         cd nebula
         python3 -m pip install -r requirements.txt
         python3 setup.py install
 
-        
+    - name: Install docker
+      block:
+        - name: Uninstall old versions
+          apt:
+            pkg:
+            - docker
+            - docker-engine
+            - docker.io
+            - containerd
+            - runc
+            state: absent
+
+        - name: update apt package index
+          apt:
+            update_cache: yes
+
+        - name: Install packages to allow apt to use a respository over HTTPS
+          apt:
+            pkg:
+            - apt-transport-https
+            - ca-certificates
+            - curl
+            - gnupg
+            - lsb-release
+            state: present
+
+        - name: Add Docker’s official GPG key
+          shell: |
+            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+
+        - name: Setup a stable repository
+          shell: |
+            echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+        - name: update apt package index
+          apt:
+            update_cache: yes
+
+        - name: Install docker engine
+          apt:
+            pkg:
+            - docker-ce
+            - docker-ce-cli
+            - containerd.io
+            state: present
+
+        - name: Verify Docker engine is installed correctly
+          shell: |
+            docker run hello-world
+          register: docker_out
+
+        - name: Display verification output
+          debug: var=docker_out.stdout_lines
+  
