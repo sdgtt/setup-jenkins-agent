@@ -114,3 +114,44 @@
         - name: Display verification output
           debug: var=docker_out.stdout_lines
   
+    - name: Install libiio
+      block:
+        - name: update apt-get
+          apt:
+            update_cache: yes
+
+        - name: install build essential
+          apt:
+            pkg:
+            - build-essential
+            - libxml2-dev
+            - bison
+            - flex
+            - libcdk5-dev
+            - cmake
+            - libaio-dev
+            - libusb-1.0-0-dev
+            - libserialport-dev
+            - libavahi-client-dev
+            - doxygen
+            - graphviz
+            - python3
+            - python3-pip
+            - python3-setuptools
+            state: present
+
+        - name: Install to read local context attributes
+          shell: |
+            git clone https://github.com/pcercuei/libini.git
+            cd libini
+            mkdir build && cd build && cmake ../ && make && make install
+
+        - name: clone and build libiio
+          shell: |
+            git clone https://github.com/analogdevicesinc/libiio.git
+            cd libiio
+            mkdir build
+            cd build
+            cmake ../ -DPYTHON_BINDINGS=ON
+            make -j$(nproc)
+            make install
