@@ -88,6 +88,8 @@
 
         - name: Add Docker’s official GPG key
           shell: |
+            GPG_FILE=/usr/share/keyrings/docker-archive-keyring.gpg
+            if [ -f ${GPG_FILE} ]; then rm ${GPG_FILE}; fi 
             curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
 
         - name: Setup a stable repository
