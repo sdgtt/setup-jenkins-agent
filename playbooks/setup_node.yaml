@@ -85,18 +85,30 @@
   become: yes
   hosts: agents
   tasks:
+    #- name: Add the repository key to the system
+    #  shell: |
+    #    wget -q -O - https://pkg.jenkins.io/debian-stable/jenkins.io.key | sudo apt-key add -
+
     - name: Add the repository key to the system
       shell: |
-        wget -q -O - https://pkg.jenkins.io/debian-stable/jenkins.io.key | sudo apt-key add -
+        curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key | sudo tee /usr/share/keyrings/jenkins-keyring.asc > /dev/null
+
+#    - name: Add to repo list
+        #lineinfile:
+        #path: /etc/apt/sources.list.d/jenkins.list
+        #state: present
+        #create: yes
+        #regexp: 'deb https://pkg.jenkins.io/debian-stable binary/'
+        #line: 'deb https://pkg.jenkins.io/debian-stable binary/'
 
     - name: Add to repo list
       lineinfile:
         path: /etc/apt/sources.list.d/jenkins.list
         state: present
         create: yes
-        regexp: 'deb https://pkg.jenkins.io/debian-stable binary/'
-        line: 'deb https://pkg.jenkins.io/debian-stable binary/'
-        
+        regexp: 'deb \[signed-by=/usr/share/keyrings/jenkins-keyring.asc\] https://pkg.jenkins.io/debian-stable binary/'
+        line: 'deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/'
+
     - name: Update apt-get
       apt:
         update_cache: yes
